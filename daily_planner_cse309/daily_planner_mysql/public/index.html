@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Daily Planner</title>
+  <style>
+    :root{
+      --bg: #e2f1ff;
+      --card: #ffece7;
+      --muted: #6b6b6b;
+      --accent: #0b7cff;
+      --border: #709678;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      color: #222;
+    }
+    body{
+      background: linear-gradient(180deg, var(--bg), #f5f5f5);
+      padding: 24px;
+      display:flex;
+      justify-content:center;
+    }
+    .planner {
+      width: 900px;
+      max-width: calc(100% - 32px);
+      background: var(--card);
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(20,20,20,0.08);
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    /* Header */
+    .header {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:16px;
+      margin-bottom:12px;
+    }
+    .title {
+      font-size:18px;
+      font-weight:700;
+      letter-spacing:0.2px;
+    }
+    .month-year {
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+    .month-year input{
+      border:1px solid var(--border);
+      background:transparent;
+      padding:8px 10px;
+      border-radius:6px;
+      min-width:140px;
+      font-weight:600;
+    }
+
+    /* Top area */
+    .top-row {
+      display:grid;
+      grid-template-columns: 1fr 300px;
+      gap:16px;
+      margin-bottom:18px;
+    }
+
+    /* Left: Schedule */
+    .schedule-card {
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:12px;
+      background:linear-gradient(180deg, #fff, #fbfbfb);
+    }
+    .time-list{
+      display:flex;
+      gap:10px;
+    }
+    .times {
+      width:92px;
+      border-right:1px dashed var(--border);
+      padding-right:10px;
+    }
+    .times div, .slots div {
+      padding:6px 4px;
+      font-size:13px;
+      color:var(--muted);
+    }
+    .slots {
+      flex:1;
+      padding-left:12px;
+    }
+    .slot {
+      border-bottom:1px dashed var(--border);
+      min-height:34px;
+      padding:6px;
+    }
+    .slot[contenteditable="true"]:focus{
+      outline:2px solid rgba(11,124,255,0.12);
+      background:#fffdf6;
+    }
+
+    /* Right: small controls */
+    .right-card{
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      background:linear-gradient(180deg,#fff,#fcfdff);
+    }
+    .weekdays{
+      display:flex;
+      gap:6px;
+      justify-content:space-between;
+      align-items:center;
+      font-size:13px;
+    }
+    .weekdays label{
+      display:flex;
+      gap:6px;
+      align-items:center;
+      font-weight:600;
+    }
+    .p-field {
+      display:flex;
+      gap:8px;
+      align-items:center;
+      font-weight:600;
+    }
+    .p-field input{
+      width:50px;
+      padding:6px 8px;
+      border-radius:6px;
+      border:1px solid var(--border);
+    }
+
+    /* Lower area: Priorities, ToDo, Notes */
+    .bottom-grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:16px;
+      margin-top:8px;
+    }
+    .panel{
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:12px;
+      min-height:120px;
+      background:linear-gradient(180deg,#fff,#fcfcfc);
+    }
+    .panel h3{
+      margin:0 0 8px 0;
+      font-size:14px;
+      letter-spacing:0.2px;
+    }
+    .priority-list li, .todo-list li{
+      margin:6px 0;
+      display:flex;
+      gap:8px;
+      align-items:flex-start;
+      font-size:14px;
+    }
+    .todo-list input[type="checkbox"]{
+      transform:scale(1.05);
+      margin-top:4px;
+    }
+    .notes {
+      grid-column: 1 / -1;
+      min-height:140px;
+      white-space:pre-wrap;
+    }
+
+    /* Print friendly */
+    @media print {
+      body {padding:0;}
+      .planner{box-shadow:none; border:none; width:100%;}
+      input, textarea {border:1px solid #ddd;}
+    }
+
+    /* Small screens */
+    @media (max-width:880px){
+      .top-row{grid-template-columns: 1fr;}
+      .bottom-grid{grid-template-columns:1fr;}
+    }
+
+    /* small helper */
+    .muted { color:var(--muted); font-size:13px;}
+    .tiny { font-size:12px; color:#888;}
+    button.print {
+      margin-left:8px;
+      padding:8px 10px;
+      border-radius:8px;
+      border:1px solid var(--border);
+      background:#fff;
+      cursor:pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="planner" role="main" aria-label="Daily planner">
+    <div class="header">
+      <div>
+        <div class="title">Daily Planner</div>
+        <div class="tiny">Plan your day — editable and printable</div>
+      </div>
+      <div class="month-year">
+        <label class="tiny" for="monthyear">Month / Year</label>
+        <input id="monthyear" type="text" placeholder="October 2025" value="">
+        <button class="print" onclick="window.print()">Print</button>
+      </div>
+    </div>
+
+    <div class="top-row">
+      <!-- Left: Schedule -->
+      <div class="schedule-card" aria-label="Hourly schedule">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <strong>Schedule</strong>
+          <span class="muted">06:00 — 22:00</span>
+        </div>
+
+        <div class="time-list">
+          <div class="times" aria-hidden="true">
+            <!-- Times list -->
+            <div>06:00</div><div>07:00</div><div>08:00</div><div>09:00</div>
+            <div>10:00</div><div>11:00</div><div>12:00</div><div>13:00</div>
+            <div>14:00</div><div>15:00</div><div>16:00</div><div>17:00</div>
+            <div>18:00</div><div>19:00</div><div>20:00</div><div>21:00</div>
+            <div>22:00</div>
+          </div>
+
+          <div class="slots" role="list">
+            <!-- Each slot editable -->
+            <div class="slot" contenteditable="true" role="listitem" aria-label="Events at 06:00"></div>
+            <div class="slot" contenteditable="true" aria-label="Events at 07:00"></div>
+            <div class="slot" contenteditable="true" aria-label="Events at 08:00"></div>
+            <div class="slot" contenteditable="true" aria-label="Events at 09:00"></div>
+            <div class="slot" contenteditable="true" aria-label="Events at 10:00"></div>
+            <div class="slot" contenteditable="true" aria-label="Events at 11:00"></div>
+            <div class="slot" contenteditable="true" aria-label="Events at 12:00"></div>
+            <div class="slot" contenteditable="true" aria-label="Events at 13:00"></div>
+            <div class="slot" contenteditable="true" aria-label="Events at 14:00"></div>
+            <div class="slot" contenteditable="true" aria-label="Events at 15:00"></div>
+            <div class="slot" contenteditable="true" aria-label="Events at 16:00"></div>
+            <div class="slot" contenteditable="true" aria-label="Events at 17:00"></div>
+            <div class="slot" contenteditable="true" aria-label="Events at 18:00"></div>
+            <div class="slot" contenteditable="true" aria-label="Events at 19:00"></div>
+            <div class="slot" contenteditable="true" aria-label="Events at 20:00"></div>
+            <div class="slot" contenteditable="true" aria-label="Events at 21:00"></div>
+            <div class="slot" contenteditable="true" aria-label="Events at 22:00"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: small controls -->
+      <div class="right-card">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <strong>Week</strong>
+          <span class="muted tiny">Mo Tu We Th Fr Sa Su</span>
+        </div>
+
+        <div class="weekdays" aria-label="Weekday selection">
+          <label><input type="checkbox" aria-label="Monday"> Mo</label>
+          <label><input type="checkbox" aria-label="Tuesday"> Tu</label>
+          <label><input type="checkbox" aria-label="Wednesday"> We</label>
+          <label><input type="checkbox" aria-label="Thursday"> Th</label>
+          <label><input type="checkbox" aria-label="Friday"> Fr</label>
+          <label><input type="checkbox" aria-label="Saturday"> Sa</label>
+          <label><input type="checkbox" aria-label="Sunday"> Su</label>
+        </div>
+
+        <div class="p-field" aria-label="P field">
+          <label>P:</label>
+          <input type="text" id="pfield" placeholder="1">
+          <div class="muted tiny">Priority count</div>
+        </div>
+
+        <div style="margin-top:6px;">
+          <div class="muted tiny">Quick notes</div>
+          <div contenteditable="true" style="border:1px solid var(--border); padding:8px; border-radius:8px; min-height:56px;">Add short reminders...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-grid">
+      <div class="panel">
+        <h3>Top Priorities</h3>
+        <ol class="priority-list" contenteditable="true" aria-label="Top priorities">
+          <li>Priority 1</li>
+          <li>Priority 2</li>
+          <li>Priority 3</li>
+        </ol>
+      </div>
+
+      <div class="panel">
+        <h3>To Do List</h3>
+        <ul class="todo-list" aria-label="To do list">
+          <li><input type="checkbox"> <span contenteditable="true">Task 1</span></li>
+          <li><input type="checkbox"> <span contenteditable="true">Task 2</span></li>
+          <li><input type="checkbox"> <span contenteditable="true">Task 3</span></li>
+        </ul>
+      </div>
+
+      <div class="panel notes" contenteditable="true" aria-label="Notes">
+        <h3 style="margin-top:0;">Notes</h3>
+        <div style="margin-top:6px;">
+          Use this area for longer notes, ideas, phone numbers, addresses, or meeting details.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // small convenience: fill month/year with today's month by default
+    (function(){
+      const inp = document.getElementById('monthyear');
+      if(inp && !inp.value){
+        const d = new Date();
+        const month = d.toLocaleString(undefined, {month: 'long'});
+        inp.value = month + ' ' + d.getFullYear();
+      }
+    })();
+  </script>
+
+  <script>
+    // Save/load integration for full planner: collects common fields and posts to /api/save
+    async function collectAndSave() {
+      const monthEl = document.getElementById('monthyear');
+      const monthyear = monthEl ? monthEl.value : '';
+      const notesEl = document.querySelector('.notes');
+      const notes = notesEl ? notesEl.innerText.trim() : '';
+      // Collect priorities
+      const priorities = Array.from(document.querySelectorAll('.priority-list li')).map(li => li.innerText.trim());
+      // Collect todo list
+      const todos = Array.from(document.querySelectorAll('.todo-list li')).map(li => {
+        const checkbox = li.querySelector('input[type="checkbox"]');
+        const text = li.querySelector('[contenteditable]') ? li.querySelector('[contenteditable]').innerText.trim() : li.innerText.trim();
+        return { text, done: checkbox ? checkbox.checked : false };
+      });
+      // Collect schedule slots
+      const slots = Array.from(document.querySelectorAll('.slots .slot')).map(s => s.innerText.trim());
+      // Collect weekday selections
+      const weekdays = Array.from(document.querySelectorAll('.weekdays input[type="checkbox"]')).map((cb,i) => ({ dayIndex: i, checked: cb.checked }));
+      const payload = { monthyear, notes, priorities, todos, slots, weekdays, savedAt: new Date().toISOString() };
+      try {
+        const res = await fetch('/api/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ monthyear, data: payload })
+        });
+        const body = await res.json();
+        if(body && body.success) alert('Saved (id: ' + body.id + ')');
+        else alert('Save failed');
+      } catch (err) {
+        console.error(err);
+        alert('Error saving: ' + err.message);
+      }
+    }
+
+    async function loadForMonth() {
+      const monthEl = document.getElementById('monthyear');
+      const monthyear = monthEl ? monthEl.value : '';
+      if(!monthyear){ alert('Please set Month / Year'); return; }
+      try {
+        const res = await fetch('/api/load?monthyear=' + encodeURIComponent(monthyear));
+        const body = await res.json();
+        if(body && body.found){
+          const data = body.data;
+          // set notes
+          const notesEl = document.querySelector('.notes');
+          if(notesEl) notesEl.innerText = data.notes || '';
+          // set priorities
+          const pEls = document.querySelectorAll('.priority-list li');
+          if(pEls && data.priorities){
+            pEls.forEach((el,i)=> el.innerText = data.priorities[i] || '');
+          }
+          // set todos
+          const todos = data.todos || [];
+          const todoEls = document.querySelectorAll('.todo-list li');
+          todoEls.forEach((li,i) => {
+            const cb = li.querySelector('input[type="checkbox"]');
+            const txt = li.querySelector('[contenteditable]');
+            if(cb && typeof todos[i] !== 'undefined') cb.checked = !!todos[i].done;
+            if(txt && typeof todos[i] !== 'undefined') txt.innerText = todos[i].text || '';
+          });
+          // set slots
+          const slotEls = document.querySelectorAll('.slots .slot');
+          if(slotEls && data.slots){
+            slotEls.forEach((s,i)=> s.innerText = data.slots[i] || '');
+          }
+          // set weekdays
+          const weekdayCbs = document.querySelectorAll('.weekdays input[type="checkbox"]');
+          if(weekdayCbs && data.weekdays){
+            data.weekdays.forEach((w,i) => { if(weekdayCbs[i]) weekdayCbs[i].checked = !!w.checked; });
+          }
+          alert('Loaded saved data (id: ' + body.id + ')');
+        } else {
+          alert('No saved data found for ' + monthyear);
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Error loading: ' + err.message);
+      }
+    }
+
+    // Add save/load buttons to the header for easy access
+    (function(){
+      const header = document.querySelector('.header .month-year');
+      if(header){
+        const saveBtn = document.createElement('button');
+        saveBtn.textContent = 'Save to DB';
+        saveBtn.style.marginLeft = '6px';
+        saveBtn.onclick = collectAndSave;
+        const loadBtn = document.createElement('button');
+        loadBtn.textContent = 'Load from DB';
+        loadBtn.style.marginLeft = '6px';
+        loadBtn.onclick = loadForMonth;
+        header.appendChild(saveBtn);
+        header.appendChild(loadBtn);
+      }
+    })();
+  </script>
+</body>
+</html>
+
+</html>
